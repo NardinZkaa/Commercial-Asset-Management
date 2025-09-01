@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, Plus, Calendar, User, AlertTriangle, ClipboardCheck } from 'lucide-react';
 import { AuditTask, CreateTaskForm } from '../types';
-import { mockUsers } from '../data/mockData';
+import { mockUsers } from '../data/mockAuditData';
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -37,17 +37,18 @@ export default function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTas
 
     // Create new task
     const newTask: AuditTask = {
-      id: Date.now().toString(),
+      id: '', // Will be set by parent component
       assetName: formData.assetName,
       type: formData.type,
       status: 'Pending',
       priority: formData.priority,
       assignedTo: formData.assignedTo,
       dueDate: formData.dueDate,
-      createdAt: new Date().toISOString(),
+      createdAt: '', // Will be set by parent component
       notes: formData.notes,
       checklist: [],
-      missingAssets: []
+      missingAssets: [],
+      scannedAssets: []
     };
 
     onSubmit(newTask);

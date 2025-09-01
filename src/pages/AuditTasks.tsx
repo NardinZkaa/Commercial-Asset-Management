@@ -33,7 +33,15 @@ export default function AuditTasks() {
   });
 
   const handleCreateTask = (newTask: AuditTask) => {
-    setTasks([newTask, ...tasks]);
+    const taskWithId = {
+      ...newTask,
+      id: `AUD-${String(tasks.length + 1).padStart(3, '0')}`,
+      createdAt: new Date().toISOString(),
+      checklist: [],
+      missingAssets: [],
+      scannedAssets: []
+    };
+    setTasks([taskWithId, ...tasks]);
     setShowCreateModal(false);
   };
 
