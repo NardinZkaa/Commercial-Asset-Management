@@ -190,7 +190,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTas
                 min={new Date().toISOString().split('T')[0]}
                 className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
                   errors.dueDate ? 'border-red-300 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
-                }`}
+                placeholder="Provide detailed instructions, requirements, or context for this audit task..."
               />
               {errors.dueDate && (
                 <p className="text-red-600 text-sm mt-1">{errors.dueDate}</p>
