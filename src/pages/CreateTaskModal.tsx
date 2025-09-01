@@ -190,7 +190,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTas
                 min={new Date().toISOString().split('T')[0]}
                 className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
                   errors.dueDate ? 'border-red-300 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
-                placeholder="Provide detailed instructions, requirements, or context for this audit task..."
+                }`}
               />
               {errors.dueDate && (
                 <p className="text-red-600 text-sm mt-1">{errors.dueDate}</p>
@@ -210,6 +210,34 @@ export default function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTas
               className="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
               placeholder="Add any additional notes or requirements..."
             />
+          </div>
+
+          {/* Guidelines */}
+          <div>
+            <div className="bg-slate-50 rounded-lg p-4">
+              <h4 className="font-medium text-slate-900 mb-2">Task Creation Guidelines:</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-600">
+                <div>
+                  <p className="font-medium text-slate-700 mb-1">Priority Levels:</p>
+                  <ul className="space-y-1">
+                    <li>• <span className="text-red-600 font-medium">Critical:</span> Immediate attention required</li>
+                    <li>• <span className="text-orange-600 font-medium">High:</span> Complete within 24 hours</li>
+                    <li>• <span className="text-amber-600 font-medium">Medium:</span> Standard timeline</li>
+                    <li>• <span className="text-emerald-600 font-medium">Low:</span> Can be scheduled</li>
+                  </ul>
+                </div>
+                <div>
+                  <p className="font-medium text-slate-700 mb-1">Audit Types:</p>
+                  <ul className="space-y-1">
+                    <li>• <span className="font-medium">IT Assets:</span> Hardware/software verification</li>
+                    <li>• <span className="font-medium">Security:</span> Access control & compliance</li>
+                    <li>• <span className="font-medium">Financial:</span> Cost & budget review</li>
+                    <li>• <span className="font-medium">Compliance:</span> Regulatory requirements</li>
+                    <li>• <span className="font-medium">Inventory:</span> Physical asset count</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Actions */}
