@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { 
   Search, 
@@ -44,6 +43,7 @@ export default function AssetRegistry() {
     vendor: '',
     description: '',
     warranty: '',
+    poNumber: '', // Added PO number field
   });
 
   const filteredAssets = assets.filter(asset => {
@@ -99,6 +99,7 @@ export default function AssetRegistry() {
       vendor: '',
       description: '',
       warranty: '',
+      poNumber: '', // Reset PO number field
     });
   };
 
@@ -143,6 +144,7 @@ export default function AssetRegistry() {
       Warranty: asset.warranty || 'N/A',
       LastAuditDate: asset.lastAuditDate ? new Date(asset.lastAuditDate).toLocaleDateString() : 'N/A',
       NextAuditDate: asset.nextAuditDate ? new Date(asset.nextAuditDate).toLocaleDateString() : 'N/A',
+      PONumber: asset.poNumber || 'N/A', // Added PO number to export
     }));
 
     const csv = Papa.unparse(csvData);
@@ -169,7 +171,7 @@ export default function AssetRegistry() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Serialле Number</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Serial Number</label>
           <input
             type="text"
             name="serialNumber"
@@ -254,6 +256,17 @@ export default function AssetRegistry() {
             onChange={handleInputChange}
             className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
+          />
+        </div>
+        {/* Added PO Number field */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">PO Number</label>
+          <input
+            type="text"
+            name="poNumber"
+            value={newAsset.poNumber || ''}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div>
@@ -430,6 +443,8 @@ export default function AssetRegistry() {
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Category</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Location</th>
+              {/* Added PO Number column */}
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">PO Number</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Value</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Condition</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">QR Code</th>
@@ -448,6 +463,8 @@ export default function AssetRegistry() {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{asset.location}</td>
+                {/* Added PO Number cell */}
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{asset.poNumber || 'N/A'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">${asset.currentValue.toLocaleString()}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium ${getConditionColor(asset.condition)}">{asset.condition}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -518,6 +535,11 @@ export default function AssetRegistry() {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
                   <p className="text-slate-900">{selectedAsset.location}</p>
+                </div>
+                {/* Added PO Number in details */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">PO Number</label>
+                  <p className="text-slate-900">{selectedAsset.poNumber || 'N/A'}</p>
                 </div>
               </div>
               <div className="space-y-4">

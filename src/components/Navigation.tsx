@@ -21,11 +21,9 @@ export default function Navigation({ isOpen, setIsOpen }: NavigationProps) {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: BarChart3 },
     { path: '/registry', label: 'Asset Registry', icon: Database },
-    { path: '/analytics', label: 'Analytics', icon: TrendingUp },
   ];
 
   const assetManagementItems = [
-    { path: '/generate-assets', label: 'Generate Assets', icon: Package },
     { path: '/audit-tasks', label: 'Audit Tasks', icon: ClipboardCheck },
     { path: '/assign-assets', label: 'Assign Assets', icon: UserCheck },
   ];

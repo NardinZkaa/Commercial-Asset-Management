@@ -189,7 +189,7 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Tas
             <div className="flex space-x-1 mt-6">
               {[
                 { id: 'overview', label: 'Overview' },
-                { id: 'checklist', label: 'Checklist' },
+                // { id: 'checklist', label: 'Checklist' },
                 { id: 'scan', label: 'Asset Scan' },
                 { id: 'scanned', label: `Scanned (${task.scannedAssets.length})` },
                 { id: 'missing', label: `Missing Assets (${task.missingAssets.length})` }
@@ -263,23 +263,6 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Tas
                       <span>Start QR Scanner</span>
                     </button>
                     
-                    <button
-                      onClick={handleStartScan}
-                      disabled={isScanning}
-                      className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white px-6 py-3 rounded-xl font-medium transition-colors duration-200 flex items-center space-x-2 shadow-lg"
-                    >
-                      {isScanning ? (
-                        <>
-                          <RefreshCw className="w-5 h-5 animate-spin" />
-                          <span>Scanning...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Play className="w-5 h-5" />
-                          <span>Auto Scan</span>
-                        </>
-                      )}
-                    </button>
                   </div>
                 </div>
 
@@ -309,7 +292,7 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Tas
               </div>
             )}
 
-            {/* Checklist Tab */}
+            {/* Checklist Tab
             {activeTab === 'checklist' && (
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
@@ -355,7 +338,7 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Tas
                   </div>
                 ))}
               </div>
-            )}
+            )} */}
 
             {/* Scan Tab */}
             {activeTab === 'scan' && (
@@ -369,23 +352,6 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Tas
                     >
                       <Camera className="w-5 h-5" />
                       <span>QR Scanner</span>
-                    </button>
-                    <button
-                      onClick={handleStartScan}
-                      disabled={isScanning}
-                      className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white px-6 py-3 rounded-xl font-medium transition-colors duration-200 flex items-center space-x-2"
-                    >
-                      {isScanning ? (
-                        <>
-                          <RefreshCw className="w-5 h-5 animate-spin" />
-                          <span>Scanning...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Play className="w-5 h-5" />
-                          <span>Auto Scan</span>
-                        </>
-                      )}
                     </button>
                   </div>
                 </div>

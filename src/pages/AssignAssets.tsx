@@ -17,8 +17,7 @@ import {
   Clock,
   AlertCircle
 } from 'lucide-react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
 import { mockUsers, mockAssets } from '../data/mockData';
 import { User as UserType, Asset, AssetAssignment, HandoverForm } from '../types';
 import FileUpload from './FileUpload';
@@ -34,9 +33,10 @@ export default function AssignAssets() {
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedAssignmentForUpload, setSelectedAssignmentForUpload] = useState<string | null>(null);
-  const [newAssignment, setNewAssignment] = useState({ userId: '', assetId: '' });
+  const [newAssignment, setNewAssignment] = useState({ userId: '', assetId: '', returnDate: '' });
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [assetToAssign, setAssetToAssign] = useState<string | null>(null);
+  const [returnDate, setReturnDate] = useState<string>(''); // New state for return date
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -95,7 +95,7 @@ export default function AssignAssets() {
 
   const handleAssignAsset = (assetId: string) => {
     setAssetToAssign(assetId);
-    setIsConfirmModalOpen(true);
+    // No immediate confirmation modal; show return date input instead
   };
 
   const confirmAssignAsset = () => {
@@ -106,22 +106,24 @@ export default function AssignAssets() {
         assetId: assetToAssign,
         userId: selectedUser.id,
         assignedDate: new Date().toISOString(),
+        returnDate: returnDate || undefined, // Use the return date from state
         status: 'pending'
       };
       setAssignments([...assignments, newAssignmentObj]);
     }
     setIsConfirmModalOpen(false);
     setAssetToAssign(null);
+    setReturnDate(''); // Reset return date after assignment
   };
 
   const cancelAssignAsset = () => {
     setIsConfirmModalOpen(false);
     setAssetToAssign(null);
+    setReturnDate(''); // Reset return date if canceled
   };
 
   const handleRemoveAsset = (assignmentId: string) => {
     setAssignments(assignments.filter(a => a.id !== assignmentId));
-    // Also remove associated handover form
     const assignment = assignments.find(a => a.id === assignmentId);
     if (assignment) {
       setHandoverForms(handoverForms.filter(f => 
@@ -136,7 +138,7 @@ export default function AssignAssets() {
   };
 
   const handleFileUpload = (file: File) => {
-    if (selectedAssignmentForUpload) {
+    if (file && selectedAssignmentForUpload) {
       const assignment = assignments.find(a => a.id === selectedAssignmentForUpload);
       if (assignment) {
         const newHandoverForm: HandoverForm = {
@@ -144,21 +146,19 @@ export default function AssignAssets() {
           assetId: assignment.assetId,
           userId: assignment.userId,
           fileName: file.name,
-          fileUrl: URL.createObjectURL(file), // In a real app, this would be uploaded to a server
+          fileUrl: URL.createObjectURL(file),
           fileSize: file.size,
           uploadDate: new Date().toISOString(),
-          signed: false
+          signed: true
         };
         
         setHandoverForms([...handoverForms, newHandoverForm]);
         
-        // Update assignment status
         setAssignments(assignments.map(a => 
           a.id === selectedAssignmentForUpload 
             ? { ...a, status: 'signed' as const }
             : a
         ));
-        
         setIsUploadModalOpen(false);
         setSelectedAssignmentForUpload(null);
       }
@@ -175,79 +175,213 @@ export default function AssignAssets() {
   };
 
   const generateAssetPDF = (asset: Asset, user: UserType) => {
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const lineHeight = 7;
+    let yPos = margin;
+
+    // Header with gradient background
+    doc.setFillColor(51, 102, 204);
+    doc.rect(0, 0, pageWidth, 40, 'F');
     
-    // Header with gradient
-    doc.setFillColor(51, 51, 51);
-    doc.rect(0, 0, 210, 40, 'F');
+    // Company Name
+    doc.setFontSize(16);
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
-    doc.text('Asset Assignment Report', 105, 25, { align: 'center' });
-    doc.setFontSize(12);
-    doc.text(`Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 105, 35, { align: 'center' });
+    doc.text('TechCorp Asset Management', pageWidth / 2, 15, { align: 'center' });
+    
+    // Form Title
+    doc.setFontSize(20);
+    doc.setFont(undefined, 'bold');
+    doc.text('Asset Handover Certificate', pageWidth / 2, 30, { align: 'center' });
+    doc.setFont(undefined, 'normal');
+    
+    yPos = 50;
 
-    // Logo Placeholder
-    doc.setFillColor(255, 255, 255);
-    doc.rect(20, 10, 30, 20, 'F');
-    doc.setTextColor(0, 0, 0);
+    // Document Info
     doc.setFontSize(10);
-    doc.text('Logo', 35, 20, { align: 'center' });
+    doc.setTextColor(100);
+    const today = new Date();
+    doc.text(`Document ID: HC-${today.getFullYear()}${String(today.getMonth()+1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}-${asset.id.slice(-6)}`, margin, yPos);
+    doc.text(`Generated on: ${today.toLocaleDateString()}`, pageWidth - margin, yPos, { align: 'right' });
+    yPos += 10;
 
-    // Asset Details Table
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(16);
-    doc.text('Asset Details', 20, 60);
-    autoTable(doc, {
-      startY: 70,
-      head: [['Field', 'Value']],
-      body: [
-        ['ID', asset.id],
-        ['Name', asset.name],
-        ['Category', asset.category],
-        ['Status', asset.status],
-        ['Serial Number', asset.serialNumber],
-        ['Location', asset.location],
-        ['Branch', asset.branch],
-        ['Purchase Date', new Date(asset.purchaseDate).toLocaleDateString()],
-        ['Purchase Price', `$${asset.purchasePrice.toLocaleString()}`],
-        ['Current Value', `$${asset.currentValue.toLocaleString()}`],
-        ['Condition', asset.condition],
-        ['Vendor', asset.vendor],
-        ['Warranty', asset.warranty || 'N/A'],
-        ['Description', asset.description],
-        ['Next Audit Date', asset.nextAuditDate ? new Date(asset.nextAuditDate).toLocaleDateString() : 'N/A'],
-      ],
-      theme: 'grid',
-      headStyles: { fillColor: [51, 102, 204], textColor: 255 },
-      bodyStyles: { fillColor: 255, textColor: 0 },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-      margin: { left: 20, right: 20 },
-      tableWidth: 'auto',
+    // Divider
+    doc.setDrawColor(200);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 15;
+
+    // ======== RENDER TABLE FUNCTION ========
+    const renderDetailsSection = (title: string, data: [string, string][]) => {
+      // Section title
+      doc.setFontSize(14);
+      doc.setTextColor(51, 102, 204);
+      doc.text(title, margin, yPos);
+      yPos += 10;
+      
+      // Header background
+      doc.setFillColor(245, 247, 250);
+      doc.rect(margin, yPos, pageWidth - 2 * margin, 8, 'F');
+      
+      // Header text
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text('Property', margin + 5, yPos + 6);
+      doc.text('Value', margin + (pageWidth - 2 * margin) * 0.4 + 5, yPos + 6);
+      
+      const startY = yPos; // Store the starting Y position of the table
+      yPos += 10;
+      
+      // Rows
+      doc.setFontSize(10);
+      doc.setTextColor(0);
+      
+      for (const [property, value] of data) {
+        if (yPos > pageHeight - 30) {
+          doc.addPage();
+          yPos = margin;
+        }
+        
+        doc.text(property + ':', margin + 5, yPos + 7);
+        const lines = doc.splitTextToSize(value, (pageWidth - 2 * margin) * 0.6 - 10);
+        const cellHeight = Math.max(lines.length * lineHeight, 10);
+        doc.text(lines, margin + (pageWidth - 2 * margin) * 0.4 + 5, yPos + 7);
+        
+        doc.setDrawColor(220);
+        doc.line(margin, yPos + cellHeight, pageWidth - margin, yPos + cellHeight); // Internal row separator
+        
+        yPos += cellHeight;
+      }
+      
+      // No outer borders - only internal separators
+      yPos += 10;
+    };
+
+    // ======== ASSET DETAILS SECTION ========
+    const assetDetails: [string, string][] = [
+      ['Asset ID', asset.id],
+      ['Asset Name', asset.name],
+      ['Category', asset.category],
+      ['Serial Number', asset.serialNumber],
+      ['Location', asset.location],
+      ['Branch', asset.branch],
+      ['Condition', asset.condition],
+      ['Purchase Date', new Date(asset.purchaseDate).toLocaleDateString()],
+      ['Current Value', `$${asset.currentValue.toLocaleString()}`],
+      ['Warranty Status', asset.warranty || 'No warranty'],
+      ['Description', asset.description || 'No description provided']
+    ];
+    
+    renderDetailsSection('Asset Information', assetDetails);
+    
+    // ======== EMPLOYEE DETAILS SECTION ========
+    const employeeDetails: [string, string][] = [
+      ['Employee ID', user.id],
+      ['Full Name', user.name],
+      ['Email', user.email],
+      ['Department', user.department],
+      ['Position', user.role],
+      ['Branch', user.branch],
+      ['Contact', user.phone || 'N/A'],
+      ['Hire Date', user.hireDate ? new Date(user.hireDate).toLocaleDateString() : 'N/A']
+    ];
+    
+    renderDetailsSection('Employee Information', employeeDetails);
+    
+    // ======== ASSIGNMENT DETAILS SECTION ========
+    const assignment = assignments.find(a => a.assetId === asset.id && a.userId === user.id);
+    const assignmentDetails: [string, string][] = [
+      ['Assignment Date', new Date(assignment?.assignedDate || today).toLocaleDateString()],
+      ['Expected Return Date', assignment?.returnDate ? new Date(assignment.returnDate).toLocaleDateString() : 'Not set']
+    ];
+    
+    renderDetailsSection('Assignment Details', assignmentDetails);
+
+    // ======== TERMS AND CONDITIONS SECTION ========
+    doc.setFontSize(14);
+    doc.setTextColor(51, 102, 204);
+    doc.text('Terms and Conditions', margin, yPos);
+    yPos += 10;
+
+    doc.setFontSize(10);
+    doc.setTextColor(0);
+    const terms = [
+      '1. The undersigned acknowledge that the above asset is being handed over in good working condition.',
+      '2. The assignee agrees to:',
+      '   a. Use the asset solely for business purposes',
+      '   b. Maintain the asset in good condition',
+      '   c. Report any damage or malfunction immediately',
+      '   d. Not modify or alter the asset without authorization',
+      '3. Any loss or damage due to negligence may result in financial responsibility.',
+      '4. The asset must be returned upon termination of employment or department transfer.',
+      '5. All company assets remain property of TechCorp at all times.'
+    ];
+
+    for (const term of terms) {
+      if (yPos > pageHeight - 30) {
+        doc.addPage();
+        yPos = margin;
+      }
+      
+      const lines = doc.splitTextToSize(term, pageWidth - 2 * margin);
+      doc.text(lines, margin, yPos);
+      yPos += lines.length * lineHeight + 2;
+    }
+
+    yPos += 10;
+
+    // ======== SIGNATURE SECTION ========
+    if (yPos > pageHeight - 100) {
+      doc.addPage();
+      yPos = margin;
+    }
+
+    doc.setFontSize(14);
+    doc.setTextColor(51, 102, 204);
+    doc.text('Signatures', margin, yPos);
+    yPos += 15;
+
+    // Signature fields with proper spacing
+    const sigY = yPos;
+    doc.setFontSize(10);
+    doc.setTextColor(0);
+    
+    // Asset Manager
+    doc.text('Asset Manager:', margin, sigY);
+    doc.line(margin, sigY + 5, margin + 80, sigY + 5);
+    doc.text('Name: ____________________', margin, sigY + 15);
+    doc.text(`Date: ${today.toLocaleDateString()}`, margin, sigY + 25);
+    
+    // Employee
+    doc.text('Employee:', pageWidth - 100, sigY);
+    doc.line(pageWidth - 100, sigY + 5, pageWidth - margin, sigY + 5);
+    doc.text(`Name: ${user.name}`, pageWidth - 100, sigY + 15);
+    doc.text(`Date: ${today.toLocaleDateString()}`, pageWidth - 100, sigY + 25);
+    
+    // Witness
+    doc.text('Witness:', pageWidth / 2 - 40, sigY + 40);
+    doc.line(pageWidth / 2 - 40, sigY + 45, pageWidth / 2 + 40, sigY + 45);
+    doc.text('Name: ____________________', pageWidth / 2 - 40, sigY + 55);
+    doc.text(`Date: ${today.toLocaleDateString()}`, pageWidth / 2 - 40, sigY + 65);
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text('Confidential Document - TechCorp Internal Use Only', pageWidth / 2, pageHeight - 10, { align: 'center' });
+
+    // Watermark
+    doc.setFontSize(60);
+    doc.setTextColor(230, 230, 230);
+    doc.setGState(new doc.GState({ opacity: 0.1 }));
+    doc.text('HANDOVER CERTIFICATE', pageWidth / 2, pageHeight / 2, {
+      angle: 45,
+      align: 'center'
     });
+    doc.setGState(new doc.GState({ opacity: 1 }));
 
-    // Employee Details Table
-    const finalY = (doc as any).lastAutoTable.finalY || 70;
-    doc.setFontSize(16);
-    doc.text('Assigned Employee Details', 20, finalY + 20);
-    autoTable(doc, {
-      startY: finalY + 30,
-      head: [['Field', 'Value']],
-      body: [
-        ['Name', user.name],
-        ['Email', user.email],
-        ['Department', user.department],
-        ['Role', user.role],
-        ['Branch', user.branch],
-      ],
-      theme: 'grid',
-      headStyles: { fillColor: [51, 102, 204], textColor: 255 },
-      bodyStyles: { fillColor: 255, textColor: 0 },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-      margin: { left: 20, right: 20 },
-      tableWidth: 'auto',
-    });
-
-    doc.save(`Asset_${asset.id}_Assignment.pdf`);
+    // Save the PDF
+    doc.save(`${asset.id}_${user.id}_Handover_Certificate.pdf`);
   };
 
   const handleNewAssignment = (e: React.FormEvent) => {
@@ -260,11 +394,12 @@ export default function AssignAssets() {
         assetId: asset.id,
         userId: user.id,
         assignedDate: new Date().toISOString(),
+        returnDate: newAssignment.returnDate || undefined, // Optional return date
         status: 'pending'
       };
       setAssignments([...assignments, newAssignmentObj]);
       setIsManageModalOpen(false);
-      setNewAssignment({ userId: '', assetId: '' });
+      setNewAssignment({ userId: '', assetId: '', returnDate: '' });
     }
   };
 
@@ -534,6 +669,34 @@ export default function AssignAssets() {
                       )}
                     </div>
                   </div>
+
+                  {/* Return Date Input (shown when asset is selected for assignment) */}
+                  {assetToAssign && (
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Expected Return Date (Optional)</label>
+                      <input
+                        type="date"
+                        value={returnDate}
+                        onChange={(e) => setReturnDate(e.target.value)}
+                        className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <div className="flex justify-end mt-2 space-x-4">
+                        <button
+                          onClick={() => setAssetToAssign(null)}
+                          className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => setIsConfirmModalOpen(true)}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          disabled={!selectedUser}
+                        >
+                          Confirm Assignment
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <button
@@ -570,7 +733,6 @@ export default function AssignAssets() {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
             <div className="mb-6">
               <FileUpload
                 onFileSelect={handleFileUpload}
@@ -578,7 +740,6 @@ export default function AssignAssets() {
                 maxSize={10}
               />
             </div>
-            
             <div className="bg-slate-50 rounded-lg p-4">
               <h4 className="font-medium text-slate-900 mb-2">Instructions:</h4>
               <ul className="text-sm text-slate-600 space-y-1">
@@ -592,15 +753,15 @@ export default function AssignAssets() {
         </div>
       )}
 
-      {/* Manage Assignments Modal */}
+      {/* New Assignment Modal */}
       {isManageModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-slate-900">New Assignment</h2>
               <button
-                onClick={() => setIsManageModalOpen(false)}
                 className="p-2 text-slate-400 hover:text-slate-600 rounded-lg transition-colors duration-200"
+                onClick={() => setIsManageModalOpen(false)}
               >
                 <X className="w-6 h-6" />
               </button>
@@ -636,17 +797,26 @@ export default function AssignAssets() {
                   ))}
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Expected Return Date (Optional)</label>
+                <input
+                  type="date"
+                  value={newAssignment.returnDate}
+                  onChange={(e) => setNewAssignment({ ...newAssignment, returnDate: e.target.value })}
+                  className="w-full px-4 py-2 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
               <div className="flex justify-end space-x-4">
                 <button
                   type="button"
                   onClick={() => setIsManageModalOpen(false)}
-                  className="px-6 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors duration-200"
+                  className="px-6 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   Assign
                 </button>
@@ -657,23 +827,26 @@ export default function AssignAssets() {
       )}
 
       {/* Confirmation Modal */}
-      {isConfirmModalOpen && (
+      {isConfirmModalOpen && assetToAssign && selectedUser && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
             <h2 className="text-xl font-bold text-slate-900 mb-4">Confirm Assignment</h2>
-            <p className="text-sm text-slate-600 mb-6">Are you sure you want to assign this asset to {selectedUser?.name}?</p>
+            <p className="text-sm text-slate-600 mb-6">
+              Are you sure you want to assign the asset "{getAssetById(assetToAssign)?.name}" to {selectedUser.name}?
+              {returnDate && <span className="block mt-2">Expected Return Date: {new Date(returnDate).toLocaleDateString()}</span>}
+            </p>
             <div className="flex justify-end space-x-4">
               <button
+                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
                 onClick={cancelAssignAsset}
-                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors duration-200"
               >
-                No
+                Cancel
               </button>
               <button
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 onClick={confirmAssignAsset}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
-                Yes
+                Confirm
               </button>
             </div>
           </div>
