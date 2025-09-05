@@ -4,6 +4,9 @@ import Dashboard from './pages/Dashboard';
 import AssetRegistry from './pages/AssetRegistry';
 import AuditTasks from './pages/AuditTasks';
 import AssignAssets from './pages/AssignAssets';
+import Reports from './pages/Reports';
+import Transfers from './pages/Transfers';
+import EnhancedDashboard from './pages/EnhancedDashboard';
 
 import Settings from './pages/Settings';
 import MaintenanceRequests from './pages/MaintenanceRequests';
@@ -16,9 +19,12 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
+          <Route path="enhanced-dashboard" element={<EnhancedDashboard />} />
           <Route path="registry" element={<AssetRegistry />} />
           <Route path="audit-tasks" element={<AuditTasks />} />
           <Route path="assign-assets" element={<AssignAssets />} />
+          <Route path="transfers" element={<Transfers />} />
+          <Route path="reports" element={<Reports />} />
 
           <Route path="generate-assets" element={<AssetRegistry />} />
           <Route path="settings" element={<Settings />} />

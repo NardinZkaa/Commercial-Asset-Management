@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, BarChart3, Database, Settings, User, ChevronDown, Package, ClipboardCheck, UserCheck, TrendingUp, Wrench, HelpCircle, FileText, PenTool as Tool } from 'lucide-react';
+import { Menu, X, BarChart3, Database, Settings, User, ChevronDown, Package, ClipboardCheck, UserCheck, TrendingUp, Wrench, HelpCircle, FileText, PenTool as Tool, ArrowRightLeft, Monitor } from 'lucide-react';
 
 interface NavigationProps {
   isOpen: boolean;
@@ -20,18 +20,24 @@ export default function Navigation({ isOpen, setIsOpen }: NavigationProps) {
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: BarChart3 },
+    { path: '/enhanced-dashboard', label: 'Executive Dashboard', icon: Monitor },
     { path: '/registry', label: 'Asset Registry', icon: Database },
   ];
 
   const assetManagementItems = [
     { path: '/audit-tasks', label: 'Audit Tasks', icon: ClipboardCheck },
     { path: '/assign-assets', label: 'Assign Assets', icon: UserCheck },
+    { path: '/transfers', label: 'Asset Transfers', icon: ArrowRightLeft },
   ];
 
   const maintenanceItems = [
     { path: '/maintenance-portal', label: 'Submit Request', icon: FileText },
     { path: '/maintenance-requests', label: 'Manage Requests', icon: Tool },
     { path: '/help-desk', label: 'Help Desk', icon: HelpCircle },
+  ];
+
+  const reportingItems = [
+    { path: '/reports', label: 'Report Generation', icon: FileText },
   ];
 
   return (
@@ -129,6 +135,21 @@ export default function Navigation({ isOpen, setIsOpen }: NavigationProps) {
                     })}
                   </div>
                 )}
+              </div>
+
+              {/* Reporting Dropdown */}
+              <div className="relative">
+                <Link
+                  to="/reports"
+                  className={`flex items-center space-x-2 transition-colors duration-200 px-3 py-2 rounded-lg hover:bg-slate-800/50 ${
+                    isActive('/reports') 
+                      ? 'text-blue-400 bg-slate-800/50' 
+                      : 'text-slate-300 hover:text-blue-400'
+                  }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  <span className="font-medium">Reports</span>
+                </Link>
               </div>
 
               <Link
@@ -251,6 +272,19 @@ export default function Navigation({ isOpen, setIsOpen }: NavigationProps) {
                 </div>
               )}
             </div>
+
+            <Link
+              to="/reports"
+              className={`flex items-center space-x-3 transition-colors duration-200 px-4 py-3 rounded-lg ${
+                isActive('/reports') 
+                  ? 'text-blue-400 bg-slate-800/50' 
+                  : 'text-slate-300 hover:text-blue-400 hover:bg-slate-800/50'
+              }`}
+              onClick={() => setIsOpen(false)}
+            >
+              <FileText className="w-5 h-5" />
+              <span className="font-medium">Reports</span>
+            </Link>
 
             <Link
               to="/profile"

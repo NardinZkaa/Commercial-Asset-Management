@@ -190,3 +190,52 @@ export interface HandoverForm {
   uploadDate: string;
   signed: boolean;
 }
+
+export interface TransferRequest {
+  id: string;
+  assetId: string;
+  fromUserId?: string;
+  toUserId?: string;
+  fromBranch?: string;
+  toBranch?: string;
+  transferType: 'user' | 'branch' | 'location';
+  reason: string;
+  requestedBy: string;
+  requestedDate: string;
+  approvedBy?: string;
+  approvedDate?: string;
+  completedDate?: string;
+  status: 'pending' | 'approved' | 'in-transit' | 'completed' | 'rejected';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  notes?: string;
+  estimatedDelivery?: string;
+  trackingNumber?: string;
+  transferCost?: number;
+  requiresApproval: boolean;
+}
+
+export interface ReportConfig {
+  type: 'asset-inventory' | 'maintenance-summary' | 'depreciation-analysis' | 'audit-compliance' | 'cost-analysis';
+  format: 'pdf' | 'csv' | 'excel';
+  dateRange: 'last-month' | 'last-quarter' | 'last-year' | 'custom';
+  customStartDate?: string;
+  customEndDate?: string;
+  filters: {
+    branch?: string;
+    category?: string;
+    status?: string;
+    department?: string;
+  };
+  includeCharts: boolean;
+  includeDetails: boolean;
+}
+
+export interface DashboardAlert {
+  id: string;
+  type: 'warning' | 'error' | 'info' | 'success';
+  title: string;
+  message: string;
+  timestamp: string;
+  actionRequired: boolean;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+}
