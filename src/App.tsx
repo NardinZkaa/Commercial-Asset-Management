@@ -25,6 +25,7 @@ function App() {
           <Route path="assign-assets" element={<AssignAssets />} />
           <Route path="transfers" element={<Transfers />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="acquisition" element={<AssetAcquisition />} />
 
           <Route path="generate-assets" element={<AssetRegistry />} />
           <Route path="settings" element={<Settings />} />

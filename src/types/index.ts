@@ -239,3 +239,85 @@ export interface DashboardAlert {
   actionRequired: boolean;
   priority: 'low' | 'medium' | 'high' | 'critical';
 }
+
+export interface AcquisitionRequest {
+  id: string;
+  requestedBy: string;
+  department: string;
+  branch: string;
+  requestDate: string;
+  status: 'draft' | 'submitted' | 'under-review' | 'approved' | 'rejected' | 'ordered' | 'delivered' | 'completed';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  justification: string;
+  businessCase: string;
+  items: AcquisitionItem[];
+  totalCost: number;
+  budgetCode?: string;
+  approvedBy?: string;
+  approvedDate?: string;
+  rejectionReason?: string;
+  vendorQuotes: VendorQuote[];
+  selectedVendor?: string;
+  poNumber?: string;
+  expectedDelivery?: string;
+  actualDelivery?: string;
+  notes?: string;
+}
+
+export interface AcquisitionItem {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  specifications: string;
+  urgency: 'immediate' | 'within-month' | 'within-quarter' | 'flexible';
+  vendor?: string;
+  model?: string;
+  warranty?: string;
+}
+
+export interface VendorQuote {
+  id: string;
+  vendorName: string;
+  vendorEmail: string;
+  quotedPrice: number;
+  deliveryTime: string;
+  warranty: string;
+  notes?: string;
+  quoteDate: string;
+  validUntil: string;
+  selected: boolean;
+}
+
+export interface BudgetAllocation {
+  department: string;
+  totalBudget: number;
+  usedBudget: number;
+  remainingBudget: number;
+  pendingRequests: number;
+}
+
+export interface ProcurementVendor {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  specialization: string[];
+  rating: number;
+  responseTime: string;
+  hourlyRate?: number;
+  contractStatus: 'active' | 'pending' | 'expired' | 'terminated';
+  contractExpiry?: string;
+  totalOrders: number;
+  totalValue: number;
+  avgDeliveryTime: number;
+  qualityScore: number;
+  onTimeDelivery: number;
+  certifications: string[];
+  paymentTerms: string;
+  notes?: string;
+}
