@@ -61,22 +61,27 @@ router.post('/register', [
         permissions = [
           'view_assets', 'create_assets', 'edit_assets', 'delete_assets',
           'assign_assets', 'view_maintenance', 'create_maintenance', 'approve_maintenance',
-          'view_analytics', 'manage_users', 'system_settings'
+          'view_analytics', 'manage_users', 'system_settings', 'view_reports',
+          'create_reports', 'manage_transfers', 'approve_transfers', 'view_acquisition',
+          'create_acquisition', 'approve_acquisition', 'manage_vendors'
         ];
         break;
       case 'Manager':
         permissions = [
           'view_assets', 'create_assets', 'edit_assets', 'assign_assets',
-          'view_maintenance', 'create_maintenance', 'approve_maintenance', 'view_analytics'
+          'view_maintenance', 'create_maintenance', 'approve_maintenance', 'view_analytics',
+          'view_reports', 'create_reports', 'manage_transfers', 'approve_transfers',
+          'view_acquisition', 'create_acquisition', 'approve_acquisition'
         ];
         break;
       case 'Auditor':
         permissions = [
-          'view_assets', 'edit_assets', 'view_maintenance', 'view_analytics'
+          'view_assets', 'edit_assets', 'view_maintenance', 'view_analytics',
+          'view_reports', 'create_reports'
         ];
         break;
       default:
-        permissions = ['view_assets', 'view_maintenance', 'create_maintenance'];
+        permissions = ['view_assets', 'view_maintenance', 'create_maintenance', 'view_acquisition', 'create_acquisition'];
     }
 
     // Create new user

@@ -70,7 +70,15 @@ const userSchema = new mongoose.Schema({
       'approve_maintenance',
       'view_analytics',
       'manage_users',
-      'system_settings'
+      'system_settings',
+      'view_reports',
+      'create_reports',
+      'manage_transfers',
+      'approve_transfers',
+      'view_acquisition',
+      'create_acquisition',
+      'approve_acquisition',
+      'manage_vendors'
     ]
   }],
   preferences: {
