@@ -22,7 +22,7 @@ import {
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import Papa from 'papaparse';
-import { mockAssets, mockMaintenanceRequests } from '../data/mockMainData';
+import { mockAssets, mockMaintenanceRequests, mockUsers } from '../data/mockMainData';
 import MetricCard from '../components/MetricCard';
 
 interface ReportConfig {
@@ -124,6 +124,7 @@ export default function Reports() {
   const generatePDFReport = (reportData: any) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     let yPos = 20;
 
     // Header
@@ -134,33 +135,57 @@ export default function Reports() {
     doc.setTextColor(255, 255, 255);
     doc.text('AssetFlow Enterprise Report', pageWidth / 2, 25, { align: 'center' });
     
-    yPos = 50;
+    // Report metadata
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 35);
+    doc.text(`Report ID: ${reportData.id}`, pageWidth - 20, 35, { align: 'right' });
+    
+    yPos = 55;
 
     // Report Title
     const reportType = reportTypes.find(r => r.id === reportConfig.type);
     doc.setFontSize(16);
     doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, 'bold');
     doc.text(reportType?.name || 'Report', 20, yPos);
-    yPos += 10;
+    doc.setFont(undefined, 'normal');
+    yPos += 15;
 
-    // Generation Info
+    // Report summary
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, yPos);
-    doc.text(`Report ID: ${reportData.id}`, pageWidth - 20, yPos, { align: 'right' });
-    yPos += 15;
+    doc.text(`Date Range: ${reportConfig.dateRange}`, 20, yPos);
+    doc.text(`Filters Applied: ${Object.keys(reportConfig.filters).length} filters`, 20, yPos + 7);
+    yPos += 20;
 
     // Report Content based on type
     if (reportConfig.type === 'asset-inventory') {
-      generateAssetInventoryPDF(doc, yPos);
+      generateAssetInventoryPDF(doc, yPos, pageHeight);
     } else if (reportConfig.type === 'maintenance-summary') {
-      generateMaintenanceSummaryPDF(doc, yPos);
+      generateMaintenanceSummaryPDF(doc, yPos, pageHeight);
+    } else if (reportConfig.type === 'depreciation-analysis') {
+      generateDepreciationAnalysisPDF(doc, yPos, pageHeight);
+    } else if (reportConfig.type === 'audit-compliance') {
+      generateAuditCompliancePDF(doc, yPos, pageHeight);
+    } else if (reportConfig.type === 'cost-analysis') {
+      generateCostAnalysisPDF(doc, yPos, pageHeight);
+    }
+
+    // Footer
+    const totalPages = doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+      doc.text('AssetFlow Enterprise - Confidential', pageWidth - 20, pageHeight - 10, { align: 'right' });
     }
 
     doc.save(`${reportType?.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
-  const generateAssetInventoryPDF = (doc: jsPDF, startY: number) => {
+  const generateAssetInventoryPDF = (doc: jsPDF, startY: number, pageHeight: number) => {
     const assets = mockAssets.filter(asset => {
       if (reportConfig.filters.category && asset.category !== reportConfig.filters.category) return false;
       if (reportConfig.filters.status && asset.status !== reportConfig.filters.status) return false;
@@ -168,26 +193,71 @@ export default function Reports() {
       return true;
     });
 
+    let yPos = startY;
+
+    // Summary section
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, 'bold');
+    doc.text('Executive Summary', 20, yPos);
+    doc.setFont(undefined, 'normal');
+    yPos += 10;
+
+    const totalValue = assets.reduce((sum, asset) => sum + asset.currentValue, 0);
+    const avgValue = totalValue / assets.length;
+    
+    doc.setFontSize(10);
+    doc.text(`Total Assets: ${assets.length}`, 20, yPos);
+    doc.text(`Total Value: $${totalValue.toLocaleString()}`, 20, yPos + 7);
+    doc.text(`Average Value: $${avgValue.toLocaleString()}`, 20, yPos + 14);
+    doc.text(`Active Assets: ${assets.filter(a => a.status === 'Active').length}`, 20, yPos + 21);
+    yPos += 35;
+
+    // Check if we need a new page
+    if (yPos > pageHeight - 100) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    // Asset details table
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('Asset Details', 20, yPos);
+    doc.setFont(undefined, 'normal');
+    yPos += 15;
+
     const tableData = assets.map(asset => [
       asset.id,
       asset.name,
       asset.category,
       asset.status,
       asset.branch,
+      asset.location,
       `$${asset.currentValue.toLocaleString()}`,
-      asset.condition
+      asset.condition,
+      asset.assignedTo || 'Unassigned'
     ]);
 
     (doc as any).autoTable({
-      head: [['ID', 'Name', 'Category', 'Status', 'Branch', 'Value', 'Condition']],
+      head: [['ID', 'Name', 'Category', 'Status', 'Branch', 'Location', 'Value', 'Condition', 'Assigned To']],
       body: tableData,
-      startY: startY,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [51, 102, 204] }
+      startY: yPos,
+      styles: { 
+        fontSize: 7,
+        cellPadding: 2
+      },
+      headStyles: { 
+        fillColor: [51, 102, 204],
+        textColor: [255, 255, 255],
+        fontSize: 8,
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      margin: { left: 20, right: 20 }
     });
   };
 
-  const generateMaintenanceSummaryPDF = (doc: jsPDF, startY: number) => {
+  const generateMaintenanceSummaryPDF = (doc: jsPDF, startY: number, pageHeight: number) => {
     const requests = mockMaintenanceRequests.filter(request => {
       const requestDate = new Date(request.submittedDate);
       const now = new Date();
@@ -195,25 +265,258 @@ export default function Reports() {
       if (reportConfig.dateRange === 'last-month') {
         const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         return requestDate >= lastMonth;
+      } else if (reportConfig.dateRange === 'last-quarter') {
+        const lastQuarter = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+        return requestDate >= lastQuarter;
+      } else if (reportConfig.dateRange === 'last-year') {
+        const lastYear = new Date(now.getFullYear() - 1, 0, 1);
+        return requestDate >= lastYear;
       }
       return true;
     });
+
+    let yPos = startY;
+
+    // Summary section
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, 'bold');
+    doc.text('Maintenance Summary', 20, yPos);
+    doc.setFont(undefined, 'normal');
+    yPos += 10;
+
+    const totalCost = requests.reduce((sum, req) => sum + (req.cost || 0), 0);
+    const avgCost = totalCost / requests.length;
+    const completedRequests = requests.filter(r => r.status === 'completed').length;
+    
+    doc.setFontSize(10);
+    doc.text(`Total Requests: ${requests.length}`, 20, yPos);
+    doc.text(`Completed: ${completedRequests}`, 20, yPos + 7);
+    doc.text(`Total Cost: $${totalCost.toLocaleString()}`, 20, yPos + 14);
+    doc.text(`Average Cost: $${avgCost.toLocaleString()}`, 20, yPos + 21);
+    yPos += 35;
+
+    // Check if we need a new page
+    if (yPos > pageHeight - 100) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    // Maintenance details table
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('Maintenance Details', 20, yPos);
+    doc.setFont(undefined, 'normal');
+    yPos += 15;
 
     const tableData = requests.map(request => [
       request.id,
       request.title,
       request.priority,
       request.status,
+      request.category,
       new Date(request.submittedDate).toLocaleDateString(),
-      request.cost ? `$${request.cost}` : 'TBD'
+      request.cost ? `$${request.cost}` : 'TBD',
+      request.assignedTo ? 'Assigned' : 'Unassigned'
     ]);
 
     (doc as any).autoTable({
-      head: [['ID', 'Title', 'Priority', 'Status', 'Submitted', 'Cost']],
+      head: [['ID', 'Title', 'Priority', 'Status', 'Category', 'Submitted', 'Cost', 'Assignment']],
       body: tableData,
-      startY: startY,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [51, 102, 204] }
+      startY: yPos,
+      styles: { 
+        fontSize: 7,
+        cellPadding: 2
+      },
+      headStyles: { 
+        fillColor: [51, 102, 204],
+        textColor: [255, 255, 255],
+        fontSize: 8,
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      margin: { left: 20, right: 20 }
+    });
+  };
+
+  const generateDepreciationAnalysisPDF = (doc: jsPDF, startY: number, pageHeight: number) => {
+    let yPos = startY;
+
+    // Summary section
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, 'bold');
+    doc.text('Depreciation Analysis', 20, yPos);
+    doc.setFont(undefined, 'normal');
+    yPos += 10;
+
+    const totalPurchaseValue = mockAssets.reduce((sum, asset) => sum + asset.purchasePrice, 0);
+    const totalCurrentValue = mockAssets.reduce((sum, asset) => sum + asset.currentValue, 0);
+    const totalDepreciation = totalPurchaseValue - totalCurrentValue;
+    const depreciationRate = (totalDepreciation / totalPurchaseValue) * 100;
+    
+    doc.setFontSize(10);
+    doc.text(`Total Purchase Value: $${totalPurchaseValue.toLocaleString()}`, 20, yPos);
+    doc.text(`Current Value: $${totalCurrentValue.toLocaleString()}`, 20, yPos + 7);
+    doc.text(`Total Depreciation: $${totalDepreciation.toLocaleString()}`, 20, yPos + 14);
+    doc.text(`Depreciation Rate: ${depreciationRate.toFixed(2)}%`, 20, yPos + 21);
+    yPos += 35;
+
+    // Category breakdown
+    const categoryData = mockAssets.reduce((acc: any, asset) => {
+      if (!acc[asset.category]) {
+        acc[asset.category] = { purchase: 0, current: 0, count: 0 };
+      }
+      acc[asset.category].purchase += asset.purchasePrice;
+      acc[asset.category].current += asset.currentValue;
+      acc[asset.category].count += 1;
+      return acc;
+    }, {});
+
+    const tableData = Object.entries(categoryData).map(([category, data]: [string, any]) => [
+      category,
+      data.count.toString(),
+      `$${data.purchase.toLocaleString()}`,
+      `$${data.current.toLocaleString()}`,
+      `$${(data.purchase - data.current).toLocaleString()}`,
+      `${(((data.purchase - data.current) / data.purchase) * 100).toFixed(2)}%`
+    ]);
+
+    (doc as any).autoTable({
+      head: [['Category', 'Count', 'Purchase Value', 'Current Value', 'Depreciation', 'Rate']],
+      body: tableData,
+      startY: yPos,
+      styles: { 
+        fontSize: 8,
+        cellPadding: 3
+      },
+      headStyles: { 
+        fillColor: [51, 102, 204],
+        textColor: [255, 255, 255],
+        fontSize: 9,
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      margin: { left: 20, right: 20 }
+    });
+  };
+
+  const generateAuditCompliancePDF = (doc: jsPDF, startY: number, pageHeight: number) => {
+    let yPos = startY;
+
+    // Summary section
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, 'bold');
+    doc.text('Audit & Compliance Report', 20, yPos);
+    doc.setFont(undefined, 'normal');
+    yPos += 10;
+
+    const totalAssets = mockAssets.length;
+    const auditedAssets = mockAssets.filter(a => a.lastAuditDate).length;
+    const overdueAudits = mockAssets.filter(a => {
+      if (!a.nextAuditDate) return false;
+      return new Date(a.nextAuditDate) < new Date();
+    }).length;
+    const complianceRate = ((auditedAssets / totalAssets) * 100);
+    
+    doc.setFontSize(10);
+    doc.text(`Total Assets: ${totalAssets}`, 20, yPos);
+    doc.text(`Audited Assets: ${auditedAssets}`, 20, yPos + 7);
+    doc.text(`Overdue Audits: ${overdueAudits}`, 20, yPos + 14);
+    doc.text(`Compliance Rate: ${complianceRate.toFixed(2)}%`, 20, yPos + 21);
+    yPos += 35;
+
+    // Audit status table
+    const auditData = mockAssets.map(asset => [
+      asset.id,
+      asset.name,
+      asset.lastAuditDate ? new Date(asset.lastAuditDate).toLocaleDateString() : 'Never',
+      asset.nextAuditDate ? new Date(asset.nextAuditDate).toLocaleDateString() : 'Not scheduled',
+      asset.nextAuditDate && new Date(asset.nextAuditDate) < new Date() ? 'Overdue' : 'Current',
+      asset.condition
+    ]);
+
+    (doc as any).autoTable({
+      head: [['Asset ID', 'Name', 'Last Audit', 'Next Audit', 'Status', 'Condition']],
+      body: auditData,
+      startY: yPos,
+      styles: { 
+        fontSize: 7,
+        cellPadding: 2
+      },
+      headStyles: { 
+        fillColor: [51, 102, 204],
+        textColor: [255, 255, 255],
+        fontSize: 8,
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      margin: { left: 20, right: 20 }
+    });
+  };
+
+  const generateCostAnalysisPDF = (doc: jsPDF, startY: number, pageHeight: number) => {
+    let yPos = startY;
+
+    // Summary section
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, 'bold');
+    doc.text('Cost Analysis Report', 20, yPos);
+    doc.setFont(undefined, 'normal');
+    yPos += 10;
+
+    const totalMaintenanceCost = mockMaintenanceRequests
+      .filter(r => r.status === 'completed' && r.cost)
+      .reduce((sum, r) => sum + (r.cost || 0), 0);
+    
+    const avgMaintenanceCost = totalMaintenanceCost / mockMaintenanceRequests.filter(r => r.cost).length;
+    const totalAssetValue = mockAssets.reduce((sum, asset) => sum + asset.currentValue, 0);
+    const maintenanceRatio = (totalMaintenanceCost / totalAssetValue) * 100;
+    
+    doc.setFontSize(10);
+    doc.text(`Total Asset Value: $${totalAssetValue.toLocaleString()}`, 20, yPos);
+    doc.text(`Total Maintenance Cost: $${totalMaintenanceCost.toLocaleString()}`, 20, yPos + 7);
+    doc.text(`Average Maintenance Cost: $${avgMaintenanceCost.toLocaleString()}`, 20, yPos + 14);
+    doc.text(`Maintenance to Asset Ratio: ${maintenanceRatio.toFixed(2)}%`, 20, yPos + 21);
+    yPos += 35;
+
+    // Cost breakdown by category
+    const costByCategory = mockMaintenanceRequests.reduce((acc: any, request) => {
+      if (!request.cost) return acc;
+      if (!acc[request.category]) {
+        acc[request.category] = { total: 0, count: 0 };
+      }
+      acc[request.category].total += request.cost;
+      acc[request.category].count += 1;
+      return acc;
+    }, {});
+
+    const costTableData = Object.entries(costByCategory).map(([category, data]: [string, any]) => [
+      category,
+      data.count.toString(),
+      `$${data.total.toLocaleString()}`,
+      `$${(data.total / data.count).toLocaleString()}`,
+      `${((data.total / totalMaintenanceCost) * 100).toFixed(2)}%`
+    ]);
+
+    (doc as any).autoTable({
+      head: [['Category', 'Requests', 'Total Cost', 'Avg Cost', '% of Total']],
+      body: costTableData,
+      startY: yPos,
+      styles: { 
+        fontSize: 8,
+        cellPadding: 3
+      },
+      headStyles: { 
+        fillColor: [51, 102, 204],
+        textColor: [255, 255, 255],
+        fontSize: 9,
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      margin: { left: 20, right: 20 }
     });
   };
 
