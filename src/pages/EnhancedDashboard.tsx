@@ -22,7 +22,9 @@ import {
   Settings,
   Eye,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  ClipboardCheck,
+  FileText
 } from 'lucide-react';
 import { ChartConfiguration } from 'chart.js/auto';
 import ChartCard from '../components/ChartCard';
