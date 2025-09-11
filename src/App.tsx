@@ -7,6 +7,7 @@ import AssignAssets from './pages/AssignAssets';
 import Reports from './pages/Reports';
 import Transfers from './pages/Transfers';
 import EnhancedDashboard from './pages/EnhancedDashboard';
+import AssetAcquisition from './pages/AssetAcquisition';
 
 import Settings from './pages/Settings';
 import MaintenanceRequests from './pages/MaintenanceRequests';
